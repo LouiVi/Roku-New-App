@@ -40,7 +40,7 @@ async function OnStart()
 	app.AddLayout( lay );
 await CheckIP();
 	
-	var tabs = app.CreateTabs( "Remote,Apps,Channels,Info", 1, -1, "VCenter" );
+	var tabs = app.CreateTabs( "Info,Remote,Apps,Channels", 1, -1, "VCenter" );
 	tabs.Hide()
     lay.AddChild( tabs );
 
@@ -48,25 +48,60 @@ await CheckIP();
     tab2 = tabs.GetLayout( "Apps" );
     tab3 = tabs.GetLayout( "Channels" );
     tab4 = tabs.GetLayout( "Info" );
+    
+    data = "Device Name^c^:[DEVICE-NAME]:null";
+    data += ",Device IP^c^:[DEVICE-IP]:null";
+    data += ",Device Mac Address^c^:[DEVICE-MAC]:null";
+    data += ",Network - AP (SSID) ^c^:[AP]:null";
+    lst = app.CreateList( data, 1, 0.4, "Expand,Horiz,WhiteGrad");
+    lst.SetTextColor2( barColor );
+    lst.SetTextShadow2( 4, 0,0,"#ececec" );
+    lst.SetFontFile( "Misc/Rowdies-Regular.ttf" );
+    lst.SetOnTouch( lst_OnTouch );
+    tab4.AddChild( lst );
     txtTab4 = app.CreateText( "Mac Address",-1,-1 );
     txtTab4.SetTextSize( 13 );
+    txtTab4.SetText( contents[2] );
+    data = data.replace("[DEVICE-NAME]",contents[1].split(":").join("^c^"));
+    data = data.replace("[DEVICE-IP]",contents[0].split(":").join("^c^"));
+    data = data.replace("[DEVICE-MAC]",contents[2].split(":").join("^c^"));
+    data = data.replace("[AP]",contents[3].split(":").join("^c^"));
+    lst.SetList( data );
     tab4.AddChild(txtTab4);
     //tab1.SetBackGradient( "red", "green", "blue", "left-right" );
     layHoriz.Animate( "Swing", ()=>{txt.Animate( "RubberBand", ()=>{txt2.Animate( "BounceLeft", ()=>{tabs.Animate( "Newspaper", ()=>{}, 1250 )}, 1250 )}, 1250 )}, 1250 )
     tab1.Animate( "Tada", ()=>{tab2.Animate( "Swing", ()=>{tab3.Animate( "Jelly", ()=>{tab4.Animate( "FallRotate", ()=>{}, 1250)}, 1250)}, 1250)}, 1250);
     
+    var commands = ["home", "home", "home", "home", "home", "up", "right", "down", "left", "up"];
+    for(com=0;com<commands.length;com++){
+    	await sendRokuCommand(commands[com]);
+    	//for(dom=0;dom<1000000;dom++){
+    	
+    	//}
+    	app.Wait(0.35, true)
+    }
+    
+    await sendRokuCommandBtn("18");
 	// Example usage
-await sendRokuCommand("play");
-await sendRokuCommand("volumeup");
+//await sendRokuCommand("play");
+//await sendRokuCommand("volumeup");
 //await enablePrivateListening(12); // To launch the channel
 
 }
+
+
+function lst_OnTouch( title, body, type, index )
+{
+    app.ShowPopup( "Touched Item = " + title  + body );
+}
+
 async function CheckIP()
 {
 	if(app.FileExists("roku-remote.txt")){
 		contents = app.ReadFile( "roku-remote.txt" ).split(",");
 		txt.SetText(  contents[0] );
     txt2.SetText(  contents[1] );
+    
     	if(utils.Confirm("We already have saved a Roku Device called: "+contents[1]+" with IP: "+contents[0]+". You want to search for a new one?")) app.DeleteFile( "roku-remote.txt" ), CheckIP();
   }else{
 	await GetRokuTVIP();
@@ -78,6 +113,20 @@ async function CheckIP()
 async function sendRokuCommand(command) {
     var rokuIP = "192.168.70.236"; // Replace with your Roku's IP address
     var url = "http://" + rokuIP + ":8060/keypress/" + command;
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            app.ShowPopup("Command sent successfully: " + command);
+        }
+    };
+    xhr.send();
+}
+
+async function sendRokuCommandBtn(command) {
+    var rokuIP = "192.168.70.236"; // Replace with your Roku's IP address
+    var url = "http://" + rokuIP + ":8060/keypress/partnerbtn/" + command;
 
     var xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
@@ -130,15 +179,17 @@ async function sendHttpRequest(url) {
             if (status === 200) {
                 found = true;
                 deviceName = reply.slice( reply.indexOf("<friendly-device-name>") + 22, reply.indexOf("</friendly-device-name>") );
-             deviceName = reply.slice( reply.indexOf("<friendly-device-name>") + 22, reply.indexOf("</friendly-device-name>") );
+                deviceMac = reply.slice( reply.indexOf("<wifi-mac>") + 10, reply.indexOf("</wifi-mac>") );
+                deviceNetwork = reply.slice( reply.indexOf("<network-name>") + 14, reply.indexOf("</network-name>") );
+             
              
                    //deviceName = reply.slice( reply.indexOf("<default-device-name>") + 21, reply.indexOf("</default-device-name>") );
              
                 txt.SetText(  rokuIP );
                 txt2.SetText(  deviceName );
-                txtTab4.SetText(  "");
+               txtTab4.SetText( deviceMac );
                 app.WriteFile( "device-info.txt", reply );
-                app.WriteFile( "roku-remote.txt", rokuIP+"," +deviceName );
+                app.WriteFile( "roku-remote.txt", rokuIP+"," +deviceName + ","+deviceMac + ","+deviceNetwork);
                // resolve(reply);
                  resolve(deviceName);
             } else {

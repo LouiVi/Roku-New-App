@@ -43,10 +43,11 @@
 	<time-zone-tz>America/Antigua</time-zone-tz>
 	<time-zone-offset>-240</time-zone-offset>
 	<clock-format>12-hour</clock-format>
-	<uptime>580048</uptime>
+	<uptime>13710</uptime>
 	<power-mode>PowerOn</power-mode>
 	<supports-suspend>true</supports-suspend>
-	<supports-find-remote>false</supports-find-remote>
+	<supports-find-remote>true</supports-find-remote>
+	<find-remote-is-possible>false</find-remote-is-possible>
 	<supports-audio-guide>true</supports-audio-guide>
 	<supports-rva>true</supports-rva>
 	<has-hands-free-voice-remote>false</has-hands-free-voice-remote>
