@@ -9,39 +9,71 @@ async function OnStart()
 		utils = app.CreateUtils();
 		barColor = utils.RandomHexColor(false);
 		utils.SetTheme(barColor);
+			/*if(app.FileExists("roku-remote.txt")){
+		contents = app.ReadFile( "roku-remote.txt" ).split(",");
+		txt.SetText(  contents[0] );
+    txt2.SetText(  contents[1] );
+		if(utils.Confirm("We already have saved a Roku Device called: "+contents[1]+" with IP: "+contents[0]+". You want to search for a new one?")) app.DeleteFile( "roku-remote.txt" );*/
 	//Create a layout with objects vertically centered.
 	lay = app.CreateLayout( "Linear", "Top,HCenter,FillXY" );
   lay2 = app.CreateLayout( "Linear", "Horizontal,VCenter,FillX" );
 	CreateActionBar("Roku Remote", barColor);
+	layHoriz.Hide();
 	//Create a text label and add it to layout.
 	txt = app.CreateText( "IP", 0.5, -1 );
-	txt.SetTextSize( 16 );
+	txt.SetTextSize( 12 );
 	txt.SetTextColor( barColor );
 	txt.SetTextShadow( 5, 0, 0, "#000000" );
+	txt.Hide()
 	lay2.AddChild( txt );
 	
 	
 	txt2 = app.CreateText( "NAME", 0.5, -1 );
-	txt2.SetTextSize( 16 );
+	txt2.SetTextSize( 12 );
 	txt2.SetTextColor( barColor );
 	txt2.SetTextShadow( 5, 0, 0, "#000000" );
+	txt2.Hide();
 	lay2.AddChild( txt2 );
 	
 	lay.AddChild( lay2 );
 	//Add layout to app.	
 	app.AddLayout( lay );
+await CheckIP();
+	
+	var tabs = app.CreateTabs( "Remote,Apps,Channels,Info", 1, -1, "VCenter" );
+	tabs.Hide()
+    lay.AddChild( tabs );
+
+    tab1 = tabs.GetLayout( "Remote" );
+    tab2 = tabs.GetLayout( "Apps" );
+    tab3 = tabs.GetLayout( "Channels" );
+    tab4 = tabs.GetLayout( "Info" );
+    txtTab4 = app.CreateText( "Mac Address",-1,-1 );
+    txtTab4.SetTextSize( 13 );
+    tab4.AddChild(txtTab4);
+    //tab1.SetBackGradient( "red", "green", "blue", "left-right" );
+    layHoriz.Animate( "Swing", ()=>{txt.Animate( "RubberBand", ()=>{txt2.Animate( "BounceLeft", ()=>{tabs.Animate( "Newspaper", ()=>{}, 1250 )}, 1250 )}, 1250 )}, 1250 )
+    tab1.Animate( "Tada", ()=>{tab2.Animate( "Swing", ()=>{tab3.Animate( "Jelly", ()=>{tab4.Animate( "FallRotate", ()=>{}, 1250)}, 1250)}, 1250)}, 1250);
+    
+	// Example usage
+await sendRokuCommand("play");
+await sendRokuCommand("volumeup");
+//await enablePrivateListening(12); // To launch the channel
+
+}
+async function CheckIP()
+{
 	if(app.FileExists("roku-remote.txt")){
 		contents = app.ReadFile( "roku-remote.txt" ).split(",");
 		txt.SetText(  contents[0] );
     txt2.SetText(  contents[1] );
+    	if(utils.Confirm("We already have saved a Roku Device called: "+contents[1]+" with IP: "+contents[0]+". You want to search for a new one?")) app.DeleteFile( "roku-remote.txt" ), CheckIP();
   }else{
 	await GetRokuTVIP();
 	}
-	// Example usage
-await sendRokuCommand("play");
-//await enablePrivateListening(12); // To launch the channel
 
 }
+
 
 async function sendRokuCommand(command) {
     var rokuIP = "192.168.70.236"; // Replace with your Roku's IP address
@@ -51,7 +83,7 @@ async function sendRokuCommand(command) {
     xhr.open("POST", url, true);
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4 && xhr.status == 200) {
-            console.log("Command sent successfully: " + command);
+            app.ShowPopup("Command sent successfully: " + command);
         }
     };
     xhr.send();
@@ -98,8 +130,14 @@ async function sendHttpRequest(url) {
             if (status === 200) {
                 found = true;
                 deviceName = reply.slice( reply.indexOf("<friendly-device-name>") + 22, reply.indexOf("</friendly-device-name>") );
+             deviceName = reply.slice( reply.indexOf("<friendly-device-name>") + 22, reply.indexOf("</friendly-device-name>") );
+             
+                   //deviceName = reply.slice( reply.indexOf("<default-device-name>") + 21, reply.indexOf("</default-device-name>") );
+             
                 txt.SetText(  rokuIP );
                 txt2.SetText(  deviceName );
+                txtTab4.SetText(  "");
+                app.WriteFile( "device-info.txt", reply );
                 app.WriteFile( "roku-remote.txt", rokuIP+"," +deviceName );
                // resolve(reply);
                  resolve(deviceName);
@@ -147,7 +185,7 @@ async function CreateActionBar(caption, barColor)
         
     //Create search icon.
     txtSearch = app.CreateText( "[fa-power-off]", -1,-1, "FontAwesome" );
-    txtSearch.SetPadding( 20,2,0,10, "dip" );
+    txtSearch.SetPadding( 2,2,0,10, "dip" );
     txtSearch.SetTextSize( 26  );
     txtSearch.SetTextColor( "#ffffff");
     txtSearch.SetTextShadow( 7, 2, 2, "#000000" );
